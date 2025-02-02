@@ -3,7 +3,7 @@ params.outdir = null
 
 process FASTP {
     
-    publishDir "${params.outdir}/${sample_id}", mode: 'copy'
+    publishDir "${params.outdir}/${sample_id}/reads-qc", mode: 'copy'
 
     label "fastp"
     
