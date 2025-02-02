@@ -27,7 +27,7 @@ process FASTP {
     tuple val(sample_id), path(fastqs)
     
     output:
-    tuple val(sample_id), path("${simple_sample_id}.fastp.json"), emit: logs
+    tuple val(sample_id), path("${sample_id}.fastp.json"), emit: logs
     
     script:
     """
@@ -35,7 +35,7 @@ process FASTP {
     -I ${fastqs[1]} \
     -j fastp.json \
     -w ${task.cpus}
-    mv fastp.json ${simple_sample_id}.fastp.json
+    mv fastp.json ${sample_id}.fastp.json
     """
 }
 
