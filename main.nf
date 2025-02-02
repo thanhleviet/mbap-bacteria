@@ -41,8 +41,7 @@ process FASTP {
 
 workflow {
     ch_input = Channel.fromPath(params.input, checkIfExists: true)
-                      .splitCsv(header: true)
+                      .splitCsv(header: true, quote: '"')
                       .map {row -> tuple(row.sample, [row.fastq_1, row.fastq_2])}
-    
     FASTP(ch_input)
 }
