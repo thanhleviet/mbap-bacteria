@@ -1,9 +1,10 @@
+params.uuid = null
 params.input = null
-params.outdir = null
+params.outdir = null // outdir is the parental location of the input
 
 process FASTP {
     
-    publishDir "${params.outdir}/${sample_id}/reads-qc", mode: 'copy'
+    publishDir "${params.outdir}", mode: 'copy'
 
     label "fastp"
     
@@ -24,24 +25,22 @@ process FASTP {
     maxRetries 3
 
     input:
-    tuple val(sample_id), path(fastqs)
+    path(fastq)
     
     output:
-    tuple val(sample_id), path("${sample_id}.fastp.json"), emit: logs
+    path("${fastq.baseName}.fastp.json"), emit: logs
     
     script:
+
     """
-    fastp -i ${fastqs[0]} \
-    -I ${fastqs[1]} \
+    fastp -i ${fastq} \
     -j fastp.json \
     -w ${task.cpus}
-    mv fastp.json ${sample_id}.fastp.json
+    mv fastp.json ${fastq.baseName}.fastp.json
     """
 }
 
 workflow {
     ch_input = Channel.fromPath(params.input, checkIfExists: true)
-                      .splitCsv(header: true, quote: '"')
-                      .map {row -> tuple(row.sample, [row.fastq_1, row.fastq_2])}
     FASTP(ch_input)
 }
