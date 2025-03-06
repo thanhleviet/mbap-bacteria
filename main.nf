@@ -1,6 +1,6 @@
 params.uuid = null
-params.input = null
-params.outdir = null // outdir is the parental location of the input
+params.input = null // E.g: s3://path/to/fastq.file
+params.outdir = null // outdir is the parental location of the input E.g: s3://path/to/
 
 process FASTP {
     
@@ -14,7 +14,7 @@ process FASTP {
 
     container 'community.wave.seqera.io/library/fastp:0.24.0--62c97b06e8447690'
 
-    tag {sample_id}
+    tag "${params.uuid}"
     
     cpus { 1 * task.attempt }
 
