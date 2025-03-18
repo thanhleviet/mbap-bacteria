@@ -28,15 +28,15 @@ process FASTP {
     path(fastq)
     
     output:
-    path("${fastq.baseName}.fastp.json"), emit: logs
+    path("fastp.{json,html}"), emit: logs
     
     script:
 
     """
     fastp -i ${fastq} \
     -j fastp.json \
+    -h fastp.html \
     -w ${task.cpus}
-    mv fastp.json ${fastq.baseName}.fastp.json
     """
 }
 
