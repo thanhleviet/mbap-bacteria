@@ -14,7 +14,7 @@ process FASTP {
 
     container 'community.wave.seqera.io/library/fastp:0.24.0--62c97b06e8447690'
 
-    tag "${params.uuid}"
+    tag "${sample_id}"
     
     cpus { 1 * task.attempt }
 
