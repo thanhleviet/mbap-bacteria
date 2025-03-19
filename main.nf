@@ -28,7 +28,7 @@ process FASTP {
     tuple val(sample_id), path(fastq1), path(fastq2)
     
     output:
-    tuple val(sample_id), path("R1.fastq.gz"), path("R2.fastq.gz")
+    tuple val(sample_id), path("R1.fastq.gz"), path("R2.fastq.gz"), emit: fastq
     
     script:
     """
