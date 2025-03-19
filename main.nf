@@ -33,9 +33,9 @@ process FASTP {
     script:
     """
     fastp -i ${fastq1} \
-    -I ${fastq2}
-    -o R1.fastq.gz
-    -O R2.fastq.gz
+    -I ${fastq2} \
+    -o R1.fastq.gz \
+    -O R2.fastq.gz \
     -w ${task.cpus}
     """
 }
@@ -59,7 +59,7 @@ process ASSEMBLY {
 
     script:
     """
-    shovill --cpus ${task.cpus} --trim --R1 ${forward} --R2 ${reverse} --outdir output
+    shovill --cpus ${task.cpus} --R1 ${forward} --R2 ${reverse} --outdir output
     """
 }
 
