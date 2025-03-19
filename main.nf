@@ -31,7 +31,6 @@ process FASTP {
     tuple val(sample_id), path("R1.fastq.gz"), path("R2.fastq.gz")
     
     script:
-
     """
     fastp -i ${fastq1} \
     -I ${fastq2}
@@ -67,6 +66,7 @@ process ASSEMBLY {
 process AMR_ABRICATE {
     
     label "CHANGE_ME"
+
     container 'staphb/abricate:1.0.1-vibrio-cholera'
     
     tag {sample_id}
@@ -85,6 +85,28 @@ process AMR_ABRICATE {
     """
 }
 
+process MLST {
+
+    label "CHANGE_ME"
+
+    container 'staphb/mlst:2.23.0-2024-12-31'
+
+    tag {sample_id}
+
+    cpus 2
+
+    input:
+    tuple val(sample_id), path(contigs)
+    
+    output:
+    path("mlst.json")
+
+    script:
+    """
+    mlst -q --json mlst.json ${contigs}
+    """
+}
+
 workflow {
     ch_input = Channel.fromPath(params.input, checkIfExists: true)
                       .splitCsv(header: true)
@@ -94,5 +116,8 @@ workflow {
 
     ASSEMBLY(FASTP.out.fastq)
 
+    MLST(ASSEMBLY.out.contigs)
+
     AMR_ABRICATE(ASSEMBLY.out.contigs)
+
 }
