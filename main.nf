@@ -105,7 +105,7 @@ process MLST {
 
     script:
     """
-    ln ${contigs} ${sample_id}.fa
+    cp ${contigs} ${sample_id}.fa
     mlst -q --json mlst.json ${contigs}
     """
 }
