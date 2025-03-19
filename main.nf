@@ -86,6 +86,28 @@ process AMR_ABRICATE {
     """
 }
 
+process AMR_FINDER {
+    
+    label "CHANGE_ME"
+    
+    container 'ncbi/amr:4.0.19-2024-12-18.1'
+
+    tag {sample_id}
+    
+    cpus 4
+
+    input:
+    tuple val(sample_id), path(contigs)
+    
+    output:
+    path("amr_finder.tsv")
+
+    script:
+    """
+    amrfinder -n ${contigs} --threads ${task.cpus} -o amr_finder.tsv
+    """
+}
+
 process MLST {
 
     label "CHANGE_ME"
@@ -122,5 +144,6 @@ workflow {
     MLST(ASSEMBLY.out.contigs)
 
     AMR_ABRICATE(ASSEMBLY.out.contigs)
-
+    
+    AMR_FINDER(ASSEMBLY.out.contigs)
 }
