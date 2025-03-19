@@ -7,7 +7,8 @@ process FASTP {
     // publishDir "${params.outdir}", mode: 'copy'
 
     label "fastp"
-    
+    label "no_publish"
+
     time { 1.hour * task.attempt }
 
     conda 'bioconda::fastp:0.24.0'
@@ -41,8 +42,6 @@ process FASTP {
 }
 
 process ASSEMBLY {
-    publishDir "${params.outdir}", mode: 'copy'
-
     label "CHANGE_ME"
     
     container 'community.wave.seqera.io/library/shovill:1.1.0--bbe6c56d0056ba59'
