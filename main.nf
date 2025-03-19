@@ -71,7 +71,8 @@ process AMR_ABRICATE {
     
     tag {sample_id}
     
-    cpus 4
+    cpus 2
+    memory '4.GB'
 
     input:
     tuple val(sample_id), path(contigs)
@@ -94,7 +95,8 @@ process MLST {
     tag {sample_id}
 
     cpus 2
-
+    memory '4.GB'
+    
     input:
     tuple val(sample_id), path(contigs)
     
