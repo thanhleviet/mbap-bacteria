@@ -54,11 +54,12 @@ process ASSEMBLY {
     input:
     tuple val(sample_id), path(forward), path(reverse)
     output:
-    tuple val(sample_id), path("output/contigs.fa"), emit: contigs
+    tuple val(sample_id), path("contigs.fa"), emit: contigs
 
     script:
     """
     shovill --cpus ${task.cpus} --R1 ${forward} --R2 ${reverse} --outdir output
+    cp output/contigs.fa .
     """
 }
 
@@ -104,6 +105,7 @@ process MLST {
 
     script:
     """
+    ln ${contigs} ${sample_id}.fa
     mlst -q --json mlst.json ${contigs}
     """
 }
