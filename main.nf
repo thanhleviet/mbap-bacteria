@@ -207,7 +207,7 @@ process MULTIQC {
         order: 10
     EOF
 
-    export TOWER_ACCESS_TOKEN=$(aws ssm get-parameter \
+    export TOWER_ACCESS_TOKEN=\$(aws ssm get-parameter \
     --name  \${SSM_TOWER_TOKEN} \
     --with-decryption \
     --query "Parameter.Value" \
