@@ -159,7 +159,7 @@ process MULTIQC {
     
     label "CHANGE_ME"
     
-    container 'community.wave.seqera.io/library/pip_multiqc:ad8f247edb55897c'
+    container 'community.wave.seqera.io/library/awscli_pip_multiqc:6acedd3980be93c9'
 
     tag {"Reporting"}
     
@@ -206,6 +206,13 @@ process MULTIQC {
       speciation:
         order: 10
     EOF
+
+    export TOWER_ACCESS_TOKEN=$(aws ssm get-parameter \
+    --name  \${SSM_TOWER_TOKEN} \
+    --with-decryption \
+    --query "Parameter.Value" \
+    --output text)
+
     multiqc -c multiqc_config.yaml --filename report ${ai} .
     """
 }
