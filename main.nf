@@ -1,5 +1,5 @@
 params.uuid = null // sample hash
-params.input = null // a CSV file
+params.input = "./sample.csv" // a CSV file
 params.outdir = null // outdir is the parental location of the input E.g: s3://path/to/
 
 process FASTP {
@@ -59,7 +59,7 @@ process ASSEMBLY {
     script:
     """
     shovill --cpus ${task.cpus} --R1 ${forward} --R2 ${reverse} --outdir output
-    cp output/contigs.fa .
+    cp output/contigs.fa ${sample_id}.fa
     """
 }
 
@@ -78,18 +78,19 @@ process AMR_ABRICATE {
     tuple val(sample_id), path(contigs)
     
     output:
-    tuple path("amr.tsv")
+    path("amr_abricate.tsv")
 
     script:
     """
-    abricate --db card ${contigs} > amr.tsv
+    abricate --db card ${contigs} > amr_abricate.tsv
     """
 }
 
 process AMR_FINDER {
     
     label "CHANGE_ME"
-    
+    label "no_publish"
+
     container 'ncbi/amr:4.0.19-2024-12-18.1'
 
     tag {sample_id}
@@ -100,11 +101,11 @@ process AMR_FINDER {
     tuple val(sample_id), path(contigs)
     
     output:
-    path("amr_finder.tsv")
+    path("${sample_id}.amr_finder.tsv")
 
     script:
     """
-    amrfinder -n ${contigs} --threads ${task.cpus} -o amr_finder.tsv
+    amrfinder --name ${sample_id} -n ${contigs} --threads ${task.cpus} -o ${sample_id}.amr_finder.tsv
     """
 }
 
@@ -123,12 +124,12 @@ process MLST {
     tuple val(sample_id), path(contigs)
     
     output:
-    path("mlst.json")
+    path("mlst.tsv")
 
     script:
     """
     cp ${contigs} ${sample_id}.fa
-    mlst -q --json mlst.json ${contigs}
+    mlst --nopath ${contigs} > mlst.tsv
     """
 }
 
@@ -141,9 +142,11 @@ workflow {
 
     ASSEMBLY(FASTP.out.fastq)
 
-    MLST(ASSEMBLY.out.contigs)
+    MLST(ASSEMBLY.out.contigs.map {it -> it[1]}.collect())
 
-    AMR_ABRICATE(ASSEMBLY.out.contigs)
+    AMR_ABRICATE(ASSEMBLY.out.contigs.map {it -> it[1]}.collect())
     
     AMR_FINDER(ASSEMBLY.out.contigs)
+
+    AMR_FINDER.out.collectFile(name: 'amr_finder.tsv', newLine: true, storeDir: params.outdir)
 }
