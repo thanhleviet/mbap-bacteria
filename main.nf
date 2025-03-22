@@ -2,6 +2,7 @@ params.uuid = null // sample hash
 params.input = null // a CSV file
 params.outdir = null // outdir is the parental location of the input E.g: s3://path/to/
 params.ai_summary = false
+params.logo = "${projectDir}/assets/theiagen.png"
 
 process FASTP {
     
@@ -82,7 +83,7 @@ process SPECIATION {
 
     script:
     """
-    sendsketch.sh in=${contigs} out=output.tsv
+    sendsketch.sh in=${contigs} nt out=output.tsv
     head -n 4 output.tsv | tail -n 2 | awk 'BEGIN {FS="\t"; OFS="\t"} 
     NR==1 {print "Sample_ID", \$0} NR>1 {print "${sample_id}", \$0}' > ${sample_id}.tsv
     """
@@ -151,7 +152,8 @@ process MLST {
 
     script:
     """
-    mlst --nopath ${contigs} > mlst.tsv
+    mlst --nopath ${contigs} > output.tsv
+    echo -e "Sample\tSpecies\tST\tAllele1\tAllele2\tAllele3\tAllele4\tAllele5\tAllele6\tAllele7" > header.txt && cat header.txt output.tsv > mlst.tsv
     """
 }
 
@@ -167,12 +169,13 @@ process MULTIQC {
 
     input:
     path(input_files)
+    path(logo)
+    
     output:
     path("report.html")
     
     script:
     def ai = params.ai_summary ? "--ai-summary-full" : ""
-
     """
     for file in ${input_files}; do
     # Extract the base name and extension
@@ -192,10 +195,11 @@ process MULTIQC {
     intro_text: "MultiQC reports summarise analysis results."
     show_analysis_paths: False
     show_analysis_time: False
-    custom_logo: "${projectDir}/assets/theiagen.png"
+    custom_logo: ${logo}
     custom_logo_url: "https://www.theiagen.com"
     custom_logo_title: "Theiagen Genomics"
-
+    custom_content:
+      output_type: 'table'
     report_section_order:
       amr_abricate:
         order: 1
@@ -207,13 +211,9 @@ process MULTIQC {
         order: 10
     EOF
 
-    export TOWER_ACCESS_TOKEN=\$(aws ssm get-parameter \
-    --name  \${SSM_TOWER_TOKEN} \
-    --with-decryption \
-    --query "Parameter.Value" \
-    --output text)
+    export AI_REPORT=\$([ -n "\${TOWER_ACCESS_TOKEN+x}" ] && echo "--ai-summary-full" || echo "")
 
-    multiqc -c multiqc_config.yaml --filename report ${ai} .
+    multiqc -c multiqc_config.yaml --filename report \${AI_REPORT} .
     """
 }
 
@@ -221,7 +221,8 @@ workflow {
     ch_input = Channel.fromPath(params.input, checkIfExists: true)
                       .splitCsv(header: true)
                       .map {it -> tuple(it.sample_id, it.fastq1, it.fastq2)}
-
+    ch_logo = Channel.fromPath(params.logo, checkIfExists: true)
+    
     FASTP(ch_input)
 
     ASSEMBLY(FASTP.out.fastq)
@@ -246,5 +247,5 @@ workflow {
     multiqc_in = multiqc_in.mix(amr_finder_out)
     multiqc_in = multiqc_in.mix(speciation_out)
 
-    MULTIQC(multiqc_in.collect())
+    MULTIQC(multiqc_in.collect(), ch_logo)
 }
