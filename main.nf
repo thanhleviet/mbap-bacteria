@@ -3,6 +3,7 @@ params.input = null // a CSV file
 params.outdir = null // outdir is the parental location of the input E.g: s3://path/to/
 params.ai_summary = false
 params.logo = "${projectDir}/assets/theiagen.png"
+params.min_samples_mashtree = 3
 
 process FASTP {
     
@@ -217,6 +218,73 @@ process MULTIQC {
     """
 }
 
+process MASHTREE {
+    
+    label "CHANGE_ME"
+    
+    container 'community.wave.seqera.io/library/mashtree:1.4.6--9bb0afbcae304c0a'
+
+    tag "RUNNING"
+    
+    cpus 4
+
+    input:
+    path(contigs)
+
+    output:
+    path("mashtree.nwk"), emit: tree
+
+    script:
+    """
+    mashtree --mindepth 0 --numcpus ${task.cpus} ${contigs} > mashtree.nwk
+    """
+}
+
+process METADATA_MICROREACT {
+    
+    label "metadata"
+    
+    container 'community.wave.seqera.io/library/python_pip_pandas:cf7da0633e193fc1'
+    
+    tag "RUNNING"
+    
+    cpus 1
+
+    input:
+    path(annotation_reports)
+
+    output:
+    path("microreact_metadata.csv"), emit: csv
+
+    script:
+    """
+    prepare_metadata.py
+    """
+}
+
+process MICROREACT {
+    
+    label "metadata"
+    
+    container 'community.wave.seqera.io/library/python_pip_pandas:cf7da0633e193fc1'
+
+    tag "metadata"
+    
+    cpus 1
+
+    input:
+    path(tree)
+    path(metadata)
+
+    output:
+    path("output.microreact")
+
+    script:
+    """
+    microreact.py --metadata ${metadata} --tree ${tree} --output output.microreact --name theiaMBAP
+    """
+}
+
 workflow {
     ch_input = Channel.fromPath(params.input, checkIfExists: true)
                       .splitCsv(header: true)
@@ -228,7 +296,12 @@ workflow {
     ASSEMBLY(FASTP.out.fastq)
     
     ch_assembly = ASSEMBLY.out.contigs.map {it -> it[1]}.collect()
-    
+
+    ch_assembly.filter { contigs -> contigs.size() >= params.min_samples_mashtree }
+               .set { ch_mashtree_input }
+
+    MASHTREE(ch_mashtree_input)
+
     SPECIATION(ASSEMBLY.out.contigs)
 
     MLST(ch_assembly)
@@ -246,6 +319,8 @@ workflow {
     multiqc_in = multiqc_in.mix(AMR_ABRICATE.out)
     multiqc_in = multiqc_in.mix(amr_finder_out)
     multiqc_in = multiqc_in.mix(speciation_out)
-
     MULTIQC(multiqc_in.collect(), ch_logo)
+
+    METADATA_MICROREACT(multiqc_in.collect())
+    MICROREACT(MASHTREE.out.tree, METADATA_MICROREACT.out.csv)
 }
